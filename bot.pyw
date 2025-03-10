@@ -29,10 +29,11 @@ class StrategyState(StatesGroup):
     active = State()
 
 # **Konstantalar**
-TOTAL_ROWS = 9
+TOTAL_ROWS = 10
 SAFE_UP_TO = 7  # 100% xavfsiz qatorlar
-EIGHTH_ROW_PROB = 0.8  # 80% xavfsizlik
-NINTH_ROW_PROB = 0.6  # 60% xavfsizlik
+EIGHTH_ROW_PROB = 0.85  # 85% xavfsizlik
+NINTH_ROW_PROB = 0.75  # 75% xavfsizlik
+TENTH_ROW_PROB = 0.5  # 50% xavfsizlik
 
 # **Chirik olma tarixi**
 rotten_apples = {i: [] for i in range(1, TOTAL_ROWS + 1)}
@@ -42,40 +43,29 @@ def get_safe_positions(row):
     """Oldingi natijalarga asoslanib xavfsiz tugmalarni tanlaydi"""
     all_positions = [1, 2, 3, 4, 5]
 
-    # Agar avval "chirik olma" chiqgan bo'lsa, uni olib tashlaymiz
     if row in rotten_apples and rotten_apples[row]:
         all_positions = [pos for pos in all_positions if pos not in rotten_apples[row]]
-
-    return all_positions if all_positions else [1, 2, 3, 4, 5]  # Agar hammasi xavfli bo'lsa, tavakkal
+    
+    return all_positions if all_positions else [1, 2, 3, 4, 5]
 
 # **Strategiyani hisoblash**
 def calculate_strategy():
     """Chirik olmasiz optimal strategiyani ishlab chiqadi"""
     strategy = []
 
-    # 1–7-qatorlar (100% xavfsiz)
     for row in range(1, SAFE_UP_TO + 1):
         safe_positions = get_safe_positions(row)
         choice = random.choice(safe_positions)
         strategy.append(choice)
 
-    # 8-qator (80% xavfsizlik)
     safe_positions = get_safe_positions(8)
-    if random.random() < EIGHTH_ROW_PROB:
-        choice = random.choice(safe_positions)
-    else:
-        choice = random.choice([1, 2, 3, 4, 5])  # Tavakkal
+    strategy.append(random.choice(safe_positions) if random.random() < EIGHTH_ROW_PROB else random.choice([1, 2, 3, 4, 5]))
 
-    strategy.append(choice)
-
-    # 9-qator (60% xavfsizlik)
     safe_positions = get_safe_positions(9)
-    if random.random() < NINTH_ROW_PROB:
-        choice = random.choice(safe_positions)
-    else:
-        choice = random.choice([1, 2, 3, 4, 5])  # Tavakkal
+    strategy.append(random.choice(safe_positions) if random.random() < NINTH_ROW_PROB else random.choice([1, 2, 3, 4, 5]))
 
-    strategy.append(choice)
+    safe_positions = get_safe_positions(10)
+    strategy.append(random.choice(safe_positions) if random.random() < TENTH_ROW_PROB else random.choice([1, 2, 3, 4, 5]))
 
     return strategy
 
@@ -117,13 +107,12 @@ async def stop_strategy(message: types.Message, state: FSMContext):
 @dp.message()
 async def set_rotten_apple(message: types.Message):
     global rotten_apples
-    if message.text.startswith("Oxirgi chirik olma:"):
+    if message.text.startswith("chirik olma:"):
         try:
             parts = message.text.split(":")[1].strip().split()
             row = int(parts[0])
             pos = int(parts[1])
 
-            # Chirik olmani eslab qolamiz
             if row in rotten_apples:
                 rotten_apples[row].append(pos)
             else:
@@ -131,7 +120,7 @@ async def set_rotten_apple(message: types.Message):
 
             await message.answer(f"Chirik olma {row}-qator, {pos}-tugmada saqlandi. Keyingi strategiya shunga mos ravishda hisoblanadi.")
         except:
-            await message.answer("Chirik olma formati noto‘g‘ri. Masalan: 'Oxirgi chirik olma: 3 2'")
+            await message.answer("Chirik olma formati noto‘g‘ri. Masalan: 'chirik olma: 3 2'")
 
 # **Botni ishga tushirish**
 async def main():
